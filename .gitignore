@@ -1,6 +1,11 @@
+# Ignore everything ...
+*
+# ... except directories ...
+!*/
+# ... and all files WITH extensions.
+!*.*
+
 *.swp
-HelloSP
-UnitSP
 # Prerequisites
 *.d
 
