@@ -173,28 +173,6 @@ void generatePermanences(Real* per_dev, size_t per_dev_pitch, Real connectedPct,
 }
 
 __device__
-void calculateOverlap(bool* in_dev, volatile bool* in_sh, UInt* pot_dev, Real* per_dev, Real* boosts_dev, UInt* numPot_dev, volatile UInt* olaps_sh, Real threshold, const UInt inBlockSize, const UInt MAX_CONNECTED)
-{ 
-	int tx = threadIdx.x;
-   	int sp_idx = blockDim.x*blockIdx.x + tx; // Global index in the SP
-	int num_assnd = (int)(inBlockSize/blockDim.x);
-	int in_idx = inBlockSize*blockIdx.x + tx*num_assnd; // Beginning of portion of input assigned to this thread
-    olaps_sh[tx] = 0;
-	// Let each thread load its part of input to shared memory
-	for(int i=0; i < num_assnd; i++)
-		in_sh[tx*num_assnd+i] = in_dev[in_idx+i]; 
-
-	__syncthreads();
-
-    for(int i=0; i < numPot_dev[sp_idx]; i++)
-    {
-		UInt bl_idx = pot_dev[sp_idx*MAX_CONNECTED+i]; // Index of block-specific input
-		if(in_sh[bl_idx] && per_dev[sp_idx*MAX_CONNECTED+i] >= threshold)
-        	olaps_sh[tx] += boosts_dev[sp_idx+i];
-    }
-}
-
-__device__
 void calculateOverlap(volatile UInt* olaps_sh, volatile bool* in_sh, bool* in_dev, UInt* pot_dev, size_t pot_dev_pitch, Real* per_dev, size_t per_dev_pitch, Real* boosts_dev, Real threshold, UInt numConnected, const UInt IN_BLOCK_SIZE)
 {
 	UInt tx = threadIdx.x;
@@ -486,19 +464,6 @@ void compute(args* ar_ptr)
 
 	if(ar.iteration_num % ar.update_period == 0)
 		updateMinOdc(ar.odc_dev, ar.odc_dev, ar.minOdc_dev, ar.minPctOdc, ar.SP_SIZE);
-}
-
-__global__
-void calculateOverlap_wrapper(bool* in_dev, UInt* pot_dev, Real* per_dev, Real* boosts_dev, UInt* numPot_dev, Real threshold, const UInt inBlockSize, const UInt MAX_CONNECTED, UInt* olaps_dev, const UInt SP_SIZE)
-{
-	extern __shared__ volatile UInt shared[];
-	volatile UInt* olaps_sh = &shared[0];
-	volatile bool* in_sh = (bool*) &olaps_sh[blockDim.x];
-
-	calculateOverlap(in_dev, in_sh, pot_dev, per_dev, boosts_dev, numPot_dev, olaps_sh, threshold, inBlockSize, MAX_CONNECTED);
-
-	if(blockDim.x*blockIdx.x+threadIdx.x < SP_SIZE)
-		olaps_dev[blockDim.x*blockIdx.x+threadIdx.x] = olaps_sh[threadIdx.x];
 }
 
 __global__
