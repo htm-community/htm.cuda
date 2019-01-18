@@ -38,3 +38,7 @@ nvcc UnitSP.cu -o UnitSP -std=c++11
 
 ## Unit tests
 Unit tests are run simply by running `UnitSP.cu`
+
+## Acknowledgement
+
+The initial work was funded by the Grant agency of CTU Prague under project SGS16/231/OHK3/3T/13.
